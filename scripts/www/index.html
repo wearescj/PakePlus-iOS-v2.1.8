@@ -36,6 +36,7 @@
             padding: 20px; text-align: center;
         }
         canvas { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; }
+        .result-img { max-width: 100%; margin-top: 10px; border-radius: 8px; display: none; }
         .button-group { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         button {
             padding: 14px 30px; font-size: 16px; font-weight: 600; color: white;
@@ -48,6 +49,7 @@
         .size-control { margin-top: 20px; }
         .size-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
         .size-btn { padding: 8px 20px; font-size: 18px; }
+        .save-hint { margin-top: 10px; color: #666; font-size: 14px; display: none; }
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -67,7 +69,7 @@
                 <li>用手指或鼠标拖动红色框到二维码位置</li>
                 <li>用+/-按钮调整框的大小</li>
                 <li>点击"替换二维码"按钮</li>
-                <li>点击"下载图片"保存结果</li>
+                <li>长按下方结果图片保存到手机</li>
             </ol>
         </div>
         <div class="upload-section">
@@ -101,11 +103,12 @@
             <div class="canvas-box">
                 <h3>结果图片C</h3>
                 <canvas id="canvasC"></canvas>
+                <img id="resultImage" class="result-img" alt="结果图片（长按保存）">
+                <p class="save-hint" id="saveHint">💡 长按上方图片可保存到手机</p>
             </div>
         </div>
         <div class="button-group">
             <button id="replaceBtn" disabled>替换二维码</button>
-            <button id="downloadBtn" disabled>下载图片</button>
             <button id="resetBtn">重置</button>
         </div>
     </div>
@@ -120,9 +123,10 @@
         const ctxA = canvasA.getContext('2d');
         const ctxC = canvasC.getContext('2d');
         const replaceBtn = document.getElementById('replaceBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
         const resetBtn = document.getElementById('resetBtn');
         const sizeControl = document.getElementById('sizeControl');
+        const resultImage = document.getElementById('resultImage');
+        const saveHint = document.getElementById('saveHint');
 
         let imgA = null;
         let imgB = null;
@@ -289,14 +293,11 @@
             if (!imgA || !imgB) return;
             ctxC.drawImage(imgA, 0, 0);
             ctxC.drawImage(imgB, selection.x, selection.y, selection.width, selection.height);
-            downloadBtn.disabled = false;
-        });
-
-        downloadBtn.addEventListener('click', function() {
-            const link = document.createElement('a');
-            link.download = 'qrcode_replaced.png';
-            link.href = canvasC.toDataURL('image/png');
-            link.click();
+            
+            const dataUrl = canvasC.toDataURL('image/png');
+            resultImage.src = dataUrl;
+            resultImage.style.display = 'block';
+            saveHint.style.display = 'block';
         });
 
         resetBtn.addEventListener('click', function() {
@@ -315,9 +316,11 @@
             
             ctxA.clearRect(0, 0, canvasA.width, canvasA.height);
             ctxC.clearRect(0, 0, canvasC.width, canvasC.height);
+            resultImage.style.display = 'none';
+            resultImage.src = '';
+            saveHint.style.display = 'none';
             sizeControl.style.display = 'none';
             replaceBtn.disabled = true;
-            downloadBtn.disabled = true;
         });
     </script>
 </body>
