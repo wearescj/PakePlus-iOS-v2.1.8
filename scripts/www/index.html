@@ -36,7 +36,8 @@
             padding: 20px; text-align: center;
         }
         canvas { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; }
-        .result-img { max-width: 100%; margin-top: 10px; border-radius: 8px; display: none; }
+        .result-img { max-width: 100%; margin-top: 10px; border-radius: 8px; display: none; cursor: pointer; }
+        .result-img:hover { opacity: 0.9; }
         .button-group { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         button {
             padding: 14px 30px; font-size: 16px; font-weight: 600; color: white;
@@ -50,6 +51,43 @@
         .size-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
         .size-btn { padding: 8px 20px; font-size: 18px; }
         .save-hint { margin-top: 10px; color: #666; font-size: 14px; display: none; }
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .fullscreen-modal.show { display: flex; }
+        .fullscreen-img {
+            max-width: 95%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .modal-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+        .close-btn {
+            background: #dc3545;
+        }
+        .save-full-btn {
+            background: #28a745;
+        }
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 20px; }
@@ -69,7 +107,7 @@
                 <li>用手指或鼠标拖动红色框到二维码位置</li>
                 <li>用+/-按钮调整框的大小</li>
                 <li>点击"替换二维码"按钮</li>
-                <li>长按下方结果图片保存到手机</li>
+                <li>点击结果图片查看大图并保存</li>
             </ol>
         </div>
         <div class="upload-section">
@@ -103,13 +141,21 @@
             <div class="canvas-box">
                 <h3>结果图片C</h3>
                 <canvas id="canvasC"></canvas>
-                <img id="resultImage" class="result-img" alt="结果图片（长按保存）">
-                <p class="save-hint" id="saveHint">💡 长按上方图片可保存到手机</p>
+                <img id="resultImage" class="result-img" alt="点击查看大图">
+                <p class="save-hint" id="saveHint">💡 点击图片查看大图</p>
             </div>
         </div>
         <div class="button-group">
             <button id="replaceBtn" disabled>替换二维码</button>
             <button id="resetBtn">重置</button>
+        </div>
+    </div>
+
+    <div class="fullscreen-modal" id="fullscreenModal">
+        <img id="fullscreenImage" class="fullscreen-img" alt="大图">
+        <div class="modal-buttons">
+            <button class="modal-btn save-full-btn" id="saveFullBtn">保存图片</button>
+            <button class="modal-btn close-btn" id="closeModalBtn">关闭</button>
         </div>
     </div>
 
@@ -127,9 +173,14 @@
         const sizeControl = document.getElementById('sizeControl');
         const resultImage = document.getElementById('resultImage');
         const saveHint = document.getElementById('saveHint');
+        const fullscreenModal = document.getElementById('fullscreenModal');
+        const fullscreenImage = document.getElementById('fullscreenImage');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveFullBtn = document.getElementById('saveFullBtn');
 
         let imgA = null;
         let imgB = null;
+        let currentResultDataUrl = '';
         let selection = { x: 50, y: 50, width: 200, height: 200 };
         let isDragging = false;
         let dragOffsetX = 0;
@@ -294,15 +345,46 @@
             ctxC.drawImage(imgA, 0, 0);
             ctxC.drawImage(imgB, selection.x, selection.y, selection.width, selection.height);
             
-            const dataUrl = canvasC.toDataURL('image/png');
-            resultImage.src = dataUrl;
+            currentResultDataUrl = canvasC.toDataURL('image/png');
+            resultImage.src = currentResultDataUrl;
             resultImage.style.display = 'block';
             saveHint.style.display = 'block';
+        });
+
+        resultImage.addEventListener('click', function() {
+            if (!currentResultDataUrl) return;
+            fullscreenImage.src = currentResultDataUrl;
+            fullscreenModal.classList.add('show');
+        });
+
+        closeModalBtn.addEventListener('click', function() {
+            fullscreenModal.classList.remove('show');
+        });
+
+        fullscreenModal.addEventListener('click', function(e) {
+            if (e.target === fullscreenModal) {
+                fullscreenModal.classList.remove('show');
+            }
+        });
+
+        saveFullBtn.addEventListener('click', function() {
+            try {
+                const link = document.createElement('a');
+                link.href = currentResultDataUrl;
+                link.download = 'qrcode_replaced.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                alert('正在保存图片...如果没有自动保存，请长按图片保存');
+            } catch (e) {
+                alert('请长按图片保存到手机');
+            }
         });
 
         resetBtn.addEventListener('click', function() {
             imgA = null;
             imgB = null;
+            currentResultDataUrl = '';
             selection = { x: 50, y: 50, width: 200, height: 200 };
             isDragging = false;
             
@@ -319,6 +401,7 @@
             resultImage.style.display = 'none';
             resultImage.src = '';
             saveHint.style.display = 'none';
+            fullscreenModal.classList.remove('show');
             sizeControl.style.display = 'none';
             replaceBtn.disabled = true;
         });
