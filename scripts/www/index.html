@@ -1,88 +1,249 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="./static/css/styles.css" />
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src * 'unsafe-inline' 'unsafe-eval'"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Tauri App</title>
-        <script src="./static/js/main.js"></script>
-    </head>
-    <body>
-        <main class="container">
-            <h1>Welcome to TauriMan</h1>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tab面板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:system-ui}
+.container{display:flex;flex-direction:column;height:100%}
+.header{background:#2d3748;display:flex;align-items:center;padding:8px 16px;gap:8px}
+.tabs{display:flex;gap:4px;flex:1;overflow-x:auto}
+.tab{padding:8px 16px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#a0aec0;cursor:pointer;transition:all .2s;font-size:14px;white-space:nowrap}
+.tab:hover{background:#4a5568;color:#e2e8f0}
+.tab.active{background:#4299e1;color:white;box-shadow:0 4px 12px rgba(66,153,225,.4)}
+.content{flex:1;position:relative;overflow:hidden}
+.frame{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:none}
+.frame.active{display:block}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#a0aec0}
+.toolbar{display:flex;gap:8px}
+.btn{padding:10px 16px;background:white;border:none;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.1);cursor:pointer;font-size:13px;color:#4a5568;transition:all .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.15)}
+.btn.danger{color:#e53e3e}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+.overlay.show{display:flex}
+.modal{background:white;border-radius:16px;width:90%;max-width:500px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+.modal-header{padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:18px;font-weight:600;color:#2d3748}
+.modal-close{width:32px;height:32px;border:none;background:#f7fafc;border-radius:8px;cursor:pointer;font-size:18px;color:#718096}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.form-group{margin-bottom:20px}
+.form-label{display:block;margin-bottom:8px;font-size:14px;font-weight:500;color:#4a5568}
+.form-input{width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;transition:border-color .2s}
+.form-input:focus{outline:none;border-color:#4299e1}
+.modal-footer{padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end}
+.modal-btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
+.modal-btn.secondary{background:#f7fafc;color:#4a5568}
+.modal-btn.primary{background:#4299e1;color:white}
+.modal-btn.primary:hover{background:#3182ce}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<div class="tabs" id="tabs"></div>
+<div class="toolbar">
+<button class="btn" onclick="openConfig()">⚙️ 配置</button>
+<button class="btn danger" onclick="clearAll()">🗑️ 清理</button>
+</div>
+</div>
+<div class="content" id="content"></div>
+</div>
+<div class="overlay" id="overlay">
+<div class="modal">
+<div class="modal-header">
+<h3 class="modal-title">Tab配置</h3>
+<button class="modal-close" onclick="closeConfig()">×</button>
+</div>
+<div class="modal-body" id="configForm"></div>
+<div class="modal-footer">
+<button class="modal-btn secondary" onclick="closeConfig()">取消</button>
+<button class="modal-btn primary" onclick="saveConfig()">保存</button>
+</div>
+</div>
+</div>
+<script>
+const TAB_COUNT = 10;
+let currentTab = 0;
+let tabs = [];
+let framesCreated = false;
 
-            <div class="row">
-                <a
-                    href="https://tauri.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="./assets/tauri.svg"
-                        class="logo tauri"
-                        alt="Tauri logo"
-                    />
-                </a>
-                <a
-                    href="https://pakeplus.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <img
-                        src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/app-icon.png"
-                        class="logo vanilla"
-                        alt="JavaScript logo"
-                    />
-                </a>
-            </div>
-            <p>Click to get data</p>
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit" id="getdata">GET DATA</button>
-            </form>
-            <div class="functions">
-                <a href="./book.html" target="_self">跳转到book.html</a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >跳到百度blank
-                </a>
-                <a
-                    href="https://www.baidu.com"
-                    target="_self"
-                    rel="noopener noreferrer"
-                >
-                    跳到百度self
-                </a>
-                <button onclick="sayHello()">点击我</button>
-                <button onclick="sayHello()">下载文件</button>
-                <button onclick="sayHello()">上传文件</button>
-                <button onclick="sayHello()">访问相机</button>
-                <button onclick="sayHello()">访问麦克风</button>
-                <button onclick="sayHello()">访问相册</button>
-                <button class="btn" onclick="openWechat()">打开微信</button>
-                <button class="btn" onclick="openWechatScan()">
-                    打开扫一扫
-                </button>
-                <button class="btn" onclick="openZhihu()">打开知乎</button>
-                <button onclick="sayHello()">打开抖音</button>
-                <button onclick="sayHello()">用浏览器打开</button>
-                <button>打开知乎</button>
-            </div>
-            <p id="greet-msg"></p>
-            <img src="./static/image/cursor.jpeg" alt="logo" />
-            <video
-                src="https://hk.gh-proxy.org/https://github.com/Sjj1024/PakePlus/blob/main/docs/static/videos/pakeplus.mp4"
-                autoplay
-                controls
-                style="width: 100%; height: 100%"
-            ></video>
-            <audio src="./static/music/yin.mp3" controls></audio>
-        </main>
-    </body>
+function init() {
+    loadData();
+    renderTabs();
+    createFrames();
+    if (tabs[currentTab] && tabs[currentTab].url) {
+        activateTab(currentTab);
+    }
+}
+
+function loadData() {
+    const s = localStorage.getItem('tabData');
+    if (s) {
+        tabs = JSON.parse(s);
+    } else {
+        tabs = [];
+        for (let i = 0; i < TAB_COUNT; i++) {
+            tabs.push({name: '', url: ''});
+        }
+    }
+    const sc = localStorage.getItem('currentTab');
+    if (sc !== null) {
+        currentTab = parseInt(sc);
+    }
+}
+
+function saveData() {
+    localStorage.setItem('tabData', JSON.stringify(tabs));
+    localStorage.setItem('currentTab', currentTab.toString());
+}
+
+function renderTabs() {
+    const tb = document.getElementById('tabs');
+    tb.innerHTML = '';
+    for (let i = 0; i < TAB_COUNT; i++) {
+        const t = document.createElement('div');
+        t.className = 'tab' + (i === currentTab ? ' active' : '');
+        t.textContent = tabs[i].name || (i + 1);
+        t.onclick = (function(i) {
+            return function() {
+                activateTab(i);
+            };
+        })(i);
+        tb.appendChild(t);
+    }
+}
+
+function createFrames() {
+    if (framesCreated) return;
+    const c = document.getElementById('content');
+    c.innerHTML = '';
+    for (let i = 0; i < TAB_COUNT; i++) {
+        if (tabs[i].url) {
+            const f = document.createElement('iframe');
+            f.className = 'frame' + (i === currentTab ? ' active' : '');
+            f.id = 'frame-' + i;
+            f.src = tabs[i].url;
+            f.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+            c.appendChild(f);
+        }
+    }
+    if (!tabs[currentTab].url) {
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.innerHTML = '<p style="font-size:18px;margin-bottom:16px;">请点击右上角配置按钮设置链接</p>';
+        c.appendChild(e);
+    }
+    framesCreated = true;
+}
+
+function updateFrames() {
+    const c = document.getElementById('content');
+    for (let i = 0; i < TAB_COUNT; i++) {
+        const existingFrame = document.getElementById('frame-' + i);
+        if (tabs[i].url && !existingFrame) {
+            const f = document.createElement('iframe');
+            f.className = 'frame' + (i === currentTab ? ' active' : '');
+            f.id = 'frame-' + i;
+            f.src = tabs[i].url;
+            f.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+            c.appendChild(f);
+        }
+    }
+    const emptyDiv = c.querySelector('.empty');
+    if (!tabs[currentTab].url && !emptyDiv) {
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.innerHTML = '<p style="font-size:18px;margin-bottom:16px;">请点击右上角配置按钮设置链接</p>';
+        c.appendChild(e);
+    } else if (tabs[currentTab].url && emptyDiv) {
+        emptyDiv.remove();
+    }
+}
+
+function activateTab(i) {
+    currentTab = i;
+    saveData();
+    renderTabs();
+    const fs = document.querySelectorAll('.frame');
+    for (let j = 0; j < fs.length; j++) {
+        fs[j].classList.remove('active');
+    }
+    const f = document.getElementById('frame-' + i);
+    if (f) {
+        f.classList.add('active');
+    }
+    const emptyDiv = document.querySelector('.empty');
+    if (!tabs[currentTab].url && !emptyDiv) {
+        const c = document.getElementById('content');
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.innerHTML = '<p style="font-size:18px;margin-bottom:16px;">请点击右上角配置按钮设置链接</p>';
+        c.appendChild(e);
+    } else if (tabs[currentTab].url && emptyDiv) {
+        emptyDiv.remove();
+    }
+}
+
+function openConfig() {
+    const f = document.getElementById('configForm');
+    f.innerHTML = '';
+    for (let i = 0; i < TAB_COUNT; i++) {
+        const g = document.createElement('div');
+        g.className = 'form-group';
+        var nameId = 'name-' + i;
+        var urlId = 'url-' + i;
+        var nameVal = tabs[i].name || '';
+        var urlVal = tabs[i].url || '';
+        g.innerHTML = '<label class="form-label">Tab ' + (i + 1) + '</label>';
+        g.innerHTML += '<input type="text" class="form-input" id="' + nameId + '" placeholder="名称" value="' + nameVal + '">';
+        g.innerHTML += '<input type="text" class="form-input" id="' + urlId + '" placeholder="https://..." value="' + urlVal + '" style="margin-top:8px;">';
+        f.appendChild(g);
+    }
+    document.getElementById('overlay').classList.add('show');
+}
+
+function closeConfig() {
+    document.getElementById('overlay').classList.remove('show');
+}
+
+function saveConfig() {
+    for (let i = 0; i < TAB_COUNT; i++) {
+        const n = document.getElementById('name-' + i);
+        const u = document.getElementById('url-' + i);
+        tabs[i] = {name: n.value.trim(), url: u.value.trim()};
+    }
+    saveData();
+    renderTabs();
+    updateFrames();
+    closeConfig();
+}
+
+function clearAll() {
+    if (confirm('确定要清理所有配置吗？')) {
+        localStorage.clear();
+        tabs = [];
+        for (let i = 0; i < TAB_COUNT; i++) {
+            tabs.push({name: '', url: ''});
+        }
+        currentTab = 0;
+        framesCreated = false;
+        saveData();
+        renderTabs();
+        const c = document.getElementById('content');
+        c.innerHTML = '';
+        createFrames();
+    }
+}
+
+document.getElementById('overlay').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeConfig();
+    }
+});
+
+init();
+</script>
+</body>
 </html>
